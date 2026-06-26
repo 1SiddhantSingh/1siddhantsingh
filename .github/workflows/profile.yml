@@ -1,0 +1,70 @@
+# ════════════════════════════════════════════════════════════════
+#  Save this file as:  .github/workflows/profile.yml
+#  (inside your <username>/<username> repository)
+#
+#  It runs daily and on demand, then auto-commits:
+#    1. The 3D contribution graph  -> profile-3d-contrib/*.svg
+#    2. The contribution "snake"    -> pushed to an `output` branch
+#
+#  IMPORTANT: After adding this file, go to your repo:
+#    Settings -> Actions -> General -> Workflow permissions
+#    -> select "Read and write permissions" -> Save.
+#  Then run it once manually: Actions tab -> "Generate Profile Assets"
+#  -> "Run workflow".
+# ════════════════════════════════════════════════════════════════
+
+name: Generate Profile Assets
+
+on:
+  schedule:
+    - cron: "0 0 * * *"          # every day at midnight UTC
+  workflow_dispatch:             # lets you run it manually
+  push:
+    branches:
+      - main
+
+jobs:
+  # ── 1. 3D contribution calendar ─────────────────────────────
+  build-3d-contrib:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate 3D contribution graph
+        uses: yoshi389111/github-profile-3d-contrib@0.7.1
+        env:
+          USERNAME: ${{ github.repository_owner }}
+
+      - name: Commit & push generated SVGs
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A profile-3d-contrib/
+          git commit -m "chore: update 3D contribution graph" || echo "No changes to commit"
+          git push
+
+  # ── 2. Snake eating the contribution graph ──────────────────
+  generate-snake:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Generate snake SVGs
+        uses: Platane/snk@v3
+        id: snake
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          outputs: |
+            dist/snake.svg
+            dist/snake-dark.svg?palette=github-dark
+
+      - name: Push snake to the `output` branch
+        uses: crazy-max/ghaction-github-pages@v4
+        with:
+          target_branch: output
+          build_dir: dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
