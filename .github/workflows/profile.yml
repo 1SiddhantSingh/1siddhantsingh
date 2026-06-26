@@ -31,11 +31,12 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Generate 3D contribution graph
-        uses: yoshi389111/github-profile-3d-contrib@0.7.1
+        uses: yoshi389111/github-profile-3d-contrib@latest
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # <-- this was the missing piece
           USERNAME: ${{ github.repository_owner }}
 
       - name: Commit & push generated SVGs
